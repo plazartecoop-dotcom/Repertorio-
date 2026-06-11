@@ -595,6 +595,13 @@
 </head>
 <body>
 
+<div id="loadingOverlay" style="position:fixed;inset:0;background:#0F0F1A;z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px">
+  <div style="font-family:'Cinzel',serif;color:#C9A84C;font-size:1.1rem;letter-spacing:0.08em">♩ Repertorio</div>
+  <div style="color:#9090a8;font-size:0.85rem">Cargando canciones…</div>
+  <div style="width:40px;height:40px;border:3px solid #2A2A42;border-top-color:#C9A84C;border-radius:50%;animation:spin 0.8s linear infinite"></div>
+</div>
+<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+
 <header>
   <h1>♩ Repertorio</h1>
   <span>Alabanza &amp; Adoración</span>
@@ -773,13 +780,60 @@
 </div>
 
 <script>
+// ══ FIREBASE ══════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyD3oZLB_qwKw0yYyemOldjnJWj0bZz57jU",
+  authDomain: "planilla-viajes-2026.firebaseapp.com",
+  databaseURL: "https://planilla-viajes-2026-default-rtdb.firebaseio.com",
+  projectId: "planilla-viajes-2026",
+  storageBucket: "planilla-viajes-2026.firebasestorage.app",
+  messagingSenderId: "943742793691",
+  appId: "1:943742793691:web:f2c863b10deae4e20919fe"
+};
+
+// Load Firebase
+const fbScript = document.createElement('script');
+fbScript.src = 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js';
+fbScript.onload = () => {
+  const dbScript = document.createElement('script');
+  dbScript.src = 'https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js';
+  dbScript.onload = () => {
+    firebase.initializeApp(firebaseConfig);
+    window.db = firebase.database();
+    loadFromFirebase();
+  };
+  document.head.appendChild(dbScript);
+};
+document.head.appendChild(fbScript);
+
+function loadFromFirebase() {
+  db.ref('repertorio').on('value', snapshot => {
+    const data = snapshot.val() || {};
+    songs = Object.values(data.songs || {});
+    setlists = Object.values(data.setlists || {});
+    renderSongs();
+    renderSetlists();
+    if (document.querySelector('[data-tab="historial"].active')) renderHistorial();
+    showLoading(false);
+  });
+}
+
+function showLoading(show) {
+  const el = document.getElementById('loadingOverlay');
+  if (el) el.style.display = show ? 'flex' : 'none';
+}
+
 // ══ DATA ══════════════════════════════════════════════════
-let songs = JSON.parse(localStorage.getItem('rep_songs') || '[]');
-let setlists = JSON.parse(localStorage.getItem('rep_setlists') || '[]');
+let songs = [];
+let setlists = [];
 
 function save() {
-  localStorage.setItem('rep_songs', JSON.stringify(songs));
-  localStorage.setItem('rep_setlists', JSON.stringify(setlists));
+  if (!window.db) return;
+  const songsObj = {};
+  songs.forEach(s => { songsObj[s.id] = s; });
+  const setlistsObj = {};
+  setlists.forEach(sl => { setlistsObj[sl.id] = sl; });
+  db.ref('repertorio').set({ songs: songsObj, setlists: setlistsObj });
 }
 
 // ══ UTILS ══════════════════════════════════════════════════
@@ -1553,59 +1607,9 @@ document.querySelectorAll('.modal-overlay').forEach(m => {
   m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
 });
 
-// ══ INIT ══════════════════════════════════════════════════
-// Cargar canción de demo si es la primera vez
-if (songs.length === 0) {
-  songs.push({
-    id: Date.now().toString(),
-    title: 'El Centro de Todo es Jesús',
-    nickname: 'Cristo el Centro',
-    category: 'adoracion',
-    tone: 'A',
-    theme: 'Adoración a Cristo',
-    link: '',
-    toneVariants: [],
-    chords: `Introducción: Voz y Piano
-
-        A              Bm           A/C#
-El Centro de todo es Jesús
-       D           A/C#          E
-El centro de todo es Jesús
-                   D                    A
-Desde el principio y el fin
-            E                F#m       E
-Tú has sido y siempre serás
-   D             E
-Cristo, Cristo...
-
-CORO
-
-                  D
-Tú eres el centro,
-  Bm                         A
-Nada importa más que tú
-                  D
-Todo el universo
-Bm                       F#m
-Gira en pos de ti Jesús
-              E
-De ti Jesús...
-
-PUENTE
-
-          E
-De mi ser hasta el cielo
-F#m
-Cristo se el centro
-      D                          E
-Mi vida eres tú, si mi vida eres tú.`,
-    history: [],
-    notes: []
-  });
-  save();
-}
-
-renderSongs();
+// ══ INIT — Firebase carga los datos y llama renderSongs/renderSetlists
+showLoading(true);
 </script>
 </body>
 </html>
+
