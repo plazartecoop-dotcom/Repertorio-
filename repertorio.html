@@ -1368,85 +1368,19 @@ $('btnShareSetlist').addEventListener('click', () => {
   const sl = setlists[0];
   const slSongs = sl.songs.map(id => songs.find(s => s.id === id)).filter(Boolean);
   const fecha = new Date(sl.fecha+'T12:00:00').toLocaleDateString('es-AR', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+  const publicLink = `https://plazartecoop-dotcom.github.io/Repertorio-/lista%20de%20canciones-p%C3%BAblico.html?sl=${sl.id}`;
 
-  // Generar HTML del setlist
-  const html = `<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Setlist — ${fecha}</title>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<style>
-  * { box-sizing:border-box; margin:0; padding:0; }
-  body { background:#0F0F1A; color:#F0EDE6; font-family:'Inter',sans-serif; min-height:100vh; display:flex; flex-direction:column; }
-  .header { background:#1A1A2E; border-bottom:1px solid #2A2A42; padding:20px; text-align:center; }
-  .header h1 { font-family:'Cinzel',serif; color:#C9A84C; font-size:1.1rem; letter-spacing:0.08em; margin-bottom:6px; }
-  .header .fecha { font-size:0.95rem; color:#F0EDE6; font-weight:500; }
-  .header .tipo { display:inline-block; margin-top:8px; font-size:0.72rem; padding:3px 12px; border-radius:20px; background:rgba(201,168,76,0.15); color:#C9A84C; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; }
-  .header .notas { font-size:0.8rem; color:#9090a8; margin-top:6px; }
-  .songs { flex:1; padding:16px; max-width:600px; margin:0 auto; width:100%; }
-  .song-item { background:#1A1A2E; border:1px solid #2A2A42; border-radius:12px; padding:16px; margin-bottom:12px; display:flex; align-items:center; gap:14px; }
-  .num { font-family:'JetBrains Mono',monospace; font-size:1.1rem; color:#C9A84C; font-weight:600; min-width:28px; }
-  .info { flex:1; }
-  .title { font-family:'Cinzel',serif; font-size:0.95rem; margin-bottom:4px; }
-  .nickname { font-size:0.78rem; color:#9090a8; font-style:italic; margin-bottom:6px; }
-  .meta { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-  .tone { font-family:'JetBrains Mono',monospace; color:#C9A84C; font-size:0.85rem; font-weight:500; }
-  .badge { font-size:0.68rem; font-weight:600; padding:2px 8px; border-radius:20px; text-transform:uppercase; letter-spacing:0.05em; }
-  .adoracion { background:rgba(123,104,238,0.2); color:#7B68EE; }
-  .alabanza { background:rgba(224,123,74,0.2); color:#E07B4A; }
-  .link-btn { background:rgba(201,168,76,0.1); border:1px solid #8a7030; color:#C9A84C; padding:6px 14px; border-radius:8px; font-size:0.78rem; text-decoration:none; display:inline-flex; align-items:center; gap:6px; margin-top:8px; }
-  .footer { text-align:center; padding:16px; font-size:0.72rem; color:#9090a8; border-top:1px solid #2A2A42; }
-</style>
-</head>
-<body>
-<div class="header">
-  <h1>♩ Repertorio — Alabanza & Adoración</h1>
-  <div class="fecha">${fecha.charAt(0).toUpperCase() + fecha.slice(1)}</div>
-  <span class="tipo">${sl.tipo}</span>
-  ${sl.notas ? `<div class="notas">${sl.notas}</div>` : ''}
-</div>
-<div class="songs">
-  ${slSongs.map((s, i) => `<div class="song-item">
-    <div class="num">${i+1}</div>
-    <div class="info">
-      <div class="title">${s.title}</div>
-      ${s.nickname ? `<div class="nickname">"${s.nickname}"</div>` : ''}
-      <div class="meta">
-        <span class="tone">🎵 ${s.tone || '—'}</span>
-        <span class="badge ${s.category}">${s.category === 'adoracion' ? 'Adoración' : 'Alabanza'}</span>
-      </div>
-      ${s.link ? `<a href="${s.link}" target="_blank" class="link-btn">▶ Ver referencia</a>` : ''}
-    </div>
-  </div>`).join('')}
-</div>
-<div class="footer">Setlist generado por Repertorio App</div>
-</body>
-</html>`;
-
-  // Descargar el HTML
-  const blob = new Blob([html], { type: 'text/html' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `setlist-${sl.fecha}.html`;
-  a.click();
-  URL.revokeObjectURL(url);
-
-  // También mostrar opción WhatsApp texto
-  setTimeout(() => {
-    let texto = `🎵 *SETLIST — ${fecha.toUpperCase()}*\n📋 ${sl.tipo.charAt(0).toUpperCase()+sl.tipo.slice(1)}`;
-    if (sl.notas) texto += ` · ${sl.notas}`;
-    texto += '\n\n';
-    slSongs.forEach((s, i) => {
-      texto += `${i+1}. *${s.title}*`;
-      if (s.nickname) texto += ` _(${s.nickname})_`;
-      texto += `\n   🎼 ${s.tone || '—'} · ${s.category === 'adoracion' ? '🙏 Adoración' : '🎉 Alabanza'}\n\n`;
-    });
-    texto += `_Abrí el archivo HTML adjunto para ver el setlist completo_`;
-    window.open('https://wa.me/?text=' + encodeURIComponent(texto), '_blank');
-  }, 500);
+  let texto = `🎵 *SETLIST — ${fecha.toUpperCase()}*\n`;
+  texto += `📋 ${sl.tipo.charAt(0).toUpperCase()+sl.tipo.slice(1)}`;
+  if (sl.notas) texto += ` · ${sl.notas}`;
+  texto += '\n\n';
+  slSongs.forEach((s, i) => {
+    texto += `${i+1}. *${s.title}*`;
+    if (s.nickname) texto += ` _(${s.nickname})_`;
+    texto += `\n   🎼 ${s.tone || '—'} · ${s.category === 'adoracion' ? '🙏 Adoración' : '🎉 Alabanza'}\n\n`;
+  });
+  texto += `Ver letra y acordes 👇\n${publicLink}`;
+  window.open('https://wa.me/?text=' + encodeURIComponent(texto), '_blank');
 });
 
 // ══ REGISTRAR USO ══════════════════════════════════════════
