@@ -604,7 +604,10 @@
 
 <header>
   <h1>♩ Repertorio</h1>
-  <span>Alabanza &amp; Adoración</span>
+  <div style="display:flex;align-items:center;gap:12px">
+    <span>Alabanza &amp; Adoración</span>
+    <button id="adminBtn" onclick="promptAdmin()" style="background:none;border:none;cursor:pointer;font-size:0.8rem;color:var(--text-dim);padding:4px 8px;border-radius:6px">🔒 Admin</button>
+  </div>
 </header>
 
 <div class="tabs">
@@ -623,7 +626,7 @@
     <button class="filter-btn active" data-filter="todas">Todas</button>
     <button class="filter-btn" data-filter="adoracion">Adoración</button>
     <button class="filter-btn" data-filter="alabanza">Alabanza</button>
-    <button class="btn-primary" id="btnNuevaCancion">+ Nueva</button>
+    <button class="btn-primary admin-only" id="btnNuevaCancion">+ Nueva</button>
   </div>
   <div class="song-list" id="songList"></div>
 </div>
@@ -631,8 +634,8 @@
 <!-- ══ SETLISTS ══ -->
 <div class="view" id="view-setlists">
   <div class="toolbar">
-    <button class="btn-secondary" id="btnShareSetlist" style="margin-left:0">📤 Compartir por WhatsApp</button>
-    <button class="btn-primary" id="btnNuevoSetlist" style="margin-left:auto">+ Nuevo Setlist</button>
+    <button class="btn-secondary admin-only" id="btnShareSetlist" style="margin-left:0">📤 Compartir por WhatsApp</button>
+    <button class="btn-primary admin-only" id="btnNuevoSetlist" style="margin-left:auto">+ Nuevo Setlist</button>
   </div>
   <div class="setlist-grid" id="setlistGrid"></div>
 </div>
@@ -707,9 +710,9 @@
     </div>
     <div id="detailBody"></div>
     <div class="modal-actions">
-      <button class="btn-secondary" id="detailEditBtn">✏ Editar</button>
-      <button class="btn-secondary" id="detailPrintBtn" title="Imprimir canción">🖨 Imprimir</button>
-      <button class="btn-primary" id="detailAddHistory">+ Registrar uso</button>
+      <button class="btn-secondary admin-only" id="detailEditBtn">✏ Editar</button>
+      <button class="btn-secondary admin-only" id="detailPrintBtn" title="Imprimir canción">🖨 Imprimir</button>
+      <button class="btn-primary admin-only" id="detailAddHistory">+ Registrar uso</button>
     </div>
   </div>
 </div>
@@ -920,8 +923,43 @@ $('searchInput').addEventListener('input', e => {
   renderSongs();
 });
 
-// ══ SONG FORM ══════════════════════════════════════════════
-let editingSongId = null;
+// ══ ADMIN AUTH ════════════════════════════════════════════
+const ADMIN_KEY = 'Dios bendice';
+let isAdmin = false;
+
+function checkAdmin() {
+  isAdmin = sessionStorage.getItem('rep_admin') === 'yes';
+  updateAdminUI();
+}
+
+function updateAdminUI() {
+  const adminEls = document.querySelectorAll('.admin-only');
+  adminEls.forEach(el => el.style.display = isAdmin ? '' : 'none');
+  const adminBtn = $('adminBtn');
+  if (adminBtn) {
+    adminBtn.textContent = isAdmin ? '🔓 Admin' : '🔒 Admin';
+    adminBtn.style.color = isAdmin ? 'var(--green)' : 'var(--text-dim)';
+  }
+}
+
+function promptAdmin() {
+  if (isAdmin) {
+    // Logout
+    sessionStorage.removeItem('rep_admin');
+    isAdmin = false;
+    updateAdminUI();
+    return;
+  }
+  const clave = prompt('Ingresá la clave de administrador:');
+  if (clave === ADMIN_KEY) {
+    sessionStorage.setItem('rep_admin', 'yes');
+    isAdmin = true;
+    updateAdminUI();
+    alert('✓ Acceso de administrador activado');
+  } else if (clave !== null) {
+    alert('Clave incorrecta');
+  }
+}
 
 $('btnNuevaCancion').addEventListener('click', () => openSongForm(null));
 $('closeSongForm').addEventListener('click', () => closeModal('modalSongForm'));
@@ -1066,7 +1104,7 @@ function renderDetailBody(s) {
           <span style="font-family:'JetBrains Mono',monospace;font-size:0.78rem;color:var(--text-dim);min-width:32px;text-align:center">${offset === 0 ? 'orig' : (offset > 0 ? '+'+offset : offset)+' st'}</span>
           <button onclick="doTranspose('${s.id}',+1)" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:1rem;font-family:'JetBrains Mono',monospace;display:flex;align-items:center;justify-content:center" title="Subir semitono">♯+</button>
           ${offset !== 0 ? `<button onclick="doTranspose('${s.id}',${-offset})" style="background:none;border:none;color:var(--text-dim);font-size:0.72rem;cursor:pointer;padding:0 4px" title="Resetear">↺</button>` : ''}
-          <button onclick="toggleChordEdit('${s.id}')" id="editChordBtn" style="background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);padding:4px 10px;border-radius:6px;font-size:0.75rem;cursor:pointer;margin-left:4px">✏ Editar</button>
+          <button onclick="toggleChordEdit('${s.id}')" id="editChordBtn" class="admin-only" style="background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);padding:4px 10px;border-radius:6px;font-size:0.75rem;cursor:pointer;margin-left:4px">✏ Editar</button>
         </div>
       </div>
       <div id="chordSheetView-${s.id}" style="margin-top:10px">${renderChordSheet(transposedChords)}</div>
@@ -1083,7 +1121,7 @@ function renderDetailBody(s) {
     html += `<div class="detail-section">
       <div class="detail-section-title" style="display:flex;justify-content:space-between;align-items:center">
         <span>Letra y Acordes</span>
-        <button onclick="toggleChordEdit('${s.id}')" style="background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);padding:4px 10px;border-radius:6px;font-size:0.75rem;cursor:pointer">✏ Agregar</button>
+        <button onclick="toggleChordEdit('${s.id}')" class="admin-only" style="background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);padding:4px 10px;border-radius:6px;font-size:0.75rem;cursor:pointer">✏ Agregar</button>
       </div>
       <div id="chordSheetView-${s.id}" style="margin-top:6px"><span style="font-size:0.8rem;color:var(--text-dim)">Sin acordes cargados.</span></div>
       <div id="chordEditView-${s.id}" style="display:none;margin-top:10px">
@@ -1540,7 +1578,7 @@ function renderSetlists() {
         </div>
         <div style="display:flex;align-items:center;gap:8px">
           <span class="count-badge">${slSongs.length} canciones</span>
-          <button onclick="deleteSetlist('${sl.id}')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:1.1rem;padding:4px" title="Eliminar setlist">🗑</button>
+          <button onclick="deleteSetlist('${sl.id}')" class="admin-only" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:1.1rem;padding:4px" title="Eliminar setlist">🗑</button>
         </div>
       </div>
       <div class="setlist-body">
@@ -1609,7 +1647,7 @@ document.querySelectorAll('.modal-overlay').forEach(m => {
 
 // ══ INIT — Firebase carga los datos y llama renderSongs/renderSetlists
 showLoading(true);
+checkAdmin();
 </script>
 </body>
 </html>
-
