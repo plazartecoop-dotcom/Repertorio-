@@ -750,7 +750,6 @@
   <div class="modal" style="max-width:480px">
     <div class="modal-header">
       <span class="modal-title" id="slModalTitle">Nuevo Setlist</span>
-      <button class="modal-close" id="closeSetlist">✕ Cerrar</button>
     </div>
     <div class="form-row">
       <div class="form-group">
@@ -777,6 +776,10 @@
     <div class="form-group">
       <label>Notas</label>
       <input type="text" id="slNotas" placeholder="Observaciones generales…">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" id="cancelSetlistBtn">Cancelar</button>
+      <button class="btn-primary" id="saveSetlistBtn">✓ Guardar Setlist</button>
     </div>
   </div>
 </div>
@@ -1401,29 +1404,6 @@ $('saveUso').addEventListener('click', () => {
 let currentSlId = null;
 let slSelectedIds = [];
 
-function slAutoSave() {
-  const fecha = $('slFecha').value;
-  if (!fecha) return;
-  if (currentSlId) {
-    const sl = setlists.find(x => x.id === currentSlId);
-    if (sl) {
-      sl.songs = [...slSelectedIds];
-      sl.notas = $('slNotas').value.trim();
-      sl.fecha = fecha;
-      sl.tipo = $('slTipo').value;
-    }
-  } else {
-    const newSl = { id: Date.now().toString(), fecha, tipo: $('slTipo').value,
-      songs: [...slSelectedIds], notas: '' };
-    currentSlId = newSl.id;
-    setlists.unshift(newSl);
-  }
-  save();
-  renderSetlists();
-  // Update count label
-  $('slCount').textContent = slSelectedIds.length ? `(${slSelectedIds.length} canciones)` : '';
-}
-
 $('btnNuevoSetlist').addEventListener('click', () => {
   currentSlId = null;
   slSelectedIds = [];
@@ -1436,15 +1416,34 @@ $('btnNuevoSetlist').addEventListener('click', () => {
   openModal('modalSetlist');
 });
 
-$('closeSetlist').addEventListener('click', () => {
-  slAutoSave();
+$('cancelSetlistBtn').addEventListener('click', () => {
   currentSlId = null;
   closeModal('modalSetlist');
 });
 
-$('slFecha').addEventListener('change', slAutoSave);
-$('slTipo').addEventListener('change', slAutoSave);
-$('slNotas').addEventListener('input', slAutoSave);
+$('saveSetlistBtn').addEventListener('click', () => {
+  const fecha = $('slFecha').value;
+  if (!fecha) { alert('Elegí una fecha'); return; }
+  if (slSelectedIds.length === 0) { alert('Agregá al menos una canción'); return; }
+  if (currentSlId) {
+    const sl = setlists.find(x => x.id === currentSlId);
+    if (sl) {
+      sl.songs = [...slSelectedIds];
+      sl.notas = $('slNotas').value.trim();
+      sl.fecha = fecha;
+      sl.tipo = $('slTipo').value;
+    }
+  } else {
+    const newSl = { id: Date.now().toString(), fecha, tipo: $('slTipo').value,
+      songs: [...slSelectedIds], notas: $('slNotas').value.trim() };
+    setlists.unshift(newSl);
+    currentSlId = newSl.id;
+  }
+  save();
+  renderSetlists();
+  currentSlId = null;
+  closeModal('modalSetlist');
+});
 
 $('slSearch').addEventListener('input', () => {
   const q = $('slSearch').value.toLowerCase();
