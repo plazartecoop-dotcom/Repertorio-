@@ -1568,8 +1568,9 @@ window.editSetlist = (id) => {
   $('slTipo').value = sl.tipo;
   $('slNotas').value = sl.notas || '';
   $('slSearch').value = '';
-  $('slSearchResults').style.display = 'none';
   $('slModalTitle').textContent = 'Editar Setlist';
+  $('shareSetlistModalBtn').style.display = '';
+  renderSlCatalog();
   renderSlSelected();
   openModal('modalSetlist');
 };
