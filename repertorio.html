@@ -769,21 +769,22 @@
       </div>
     </div>
     <div class="form-group">
-      <label>Buscar canción</label>
-      <input type="text" id="slSearch" placeholder="Escribí el nombre…" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-family:'Inter',sans-serif;font-size:0.85rem;outline:none">
-      <div id="slSearchResults" style="display:none;background:var(--bg);border:1px solid var(--border);border-radius:8px;margin-top:6px;max-height:160px;overflow-y:auto"></div>
-    </div>
-    <div class="form-group">
-      <label>Setlist <span id="slCount" style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--gold)"></span></label>
-      <div id="slSelectedSongs" style="display:flex;flex-direction:column;gap:6px;min-height:40px"></div>
-    </div>
-    <div class="form-group">
       <label>Notas</label>
       <input type="text" id="slNotas" placeholder="Observaciones generales…">
     </div>
+    <div class="form-group">
+      <label>Elegir canciones <span id="slCount" style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--gold)"></span></label>
+      <input type="text" id="slSearch" placeholder="Filtrar canciones…" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-family:'Inter',sans-serif;font-size:0.85rem;outline:none;margin-bottom:8px">
+      <div id="slCatalog" style="max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;background:var(--bg)"></div>
+    </div>
+    <div class="form-group" id="slSelectedGroup" style="display:none">
+      <label>En el setlist</label>
+      <div id="slSelectedSongs" style="display:flex;flex-direction:column;gap:6px"></div>
+    </div>
     <div class="modal-actions">
       <button class="btn-secondary" id="cancelSetlistBtn">Cancelar</button>
-      <button class="btn-primary" id="saveSetlistBtn">✓ Guardar Setlist</button>
+      <button class="btn-secondary" id="shareSetlistModalBtn" style="display:none">📤 Compartir</button>
+      <button class="btn-primary" id="saveSetlistBtn">✓ Guardar</button>
     </div>
   </div>
 </div>
@@ -1404,9 +1405,59 @@ $('saveUso').addEventListener('click', () => {
   renderSongs();
 });
 
-// ══ SETLIST - ID del setlist activo en edición
+// ══ SETLIST ════════════════════════════════════════════
 let currentSlId = null;
 let slSelectedIds = [];
+
+function renderSlCatalog() {
+  const q = ($('slSearch').value || '').toLowerCase();
+  const filtered = songs.filter(s => !q || s.title.toLowerCase().includes(q));
+  const catalog = $('slCatalog');
+  if (!catalog) return;
+  if (!filtered.length) {
+    catalog.innerHTML = `<div style="padding:12px;font-size:0.8rem;color:var(--text-dim)">Sin canciones.</div>`;
+    return;
+  }
+  catalog.innerHTML = filtered.map(s => {
+    const selected = slSelectedIds.includes(s.id);
+    return `<div onclick="slToggleSong('${s.id}')" style="display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);background:${selected ? 'rgba(201,168,76,0.08)' : 'transparent'}">
+      <span style="width:22px;height:22px;border-radius:50%;border:2px solid ${selected ? 'var(--gold)' : 'var(--border)'};background:${selected ? 'var(--gold)' : 'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.75rem;color:#0F0F1A;font-weight:700">${selected ? '✓' : ''}</span>
+      <span style="flex:1;font-size:0.88rem">${s.title}</span>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:0.78rem;color:var(--gold)">${s.tone || ''}</span>
+      <span class="badge badge-${s.category}" style="font-size:0.65rem">${s.category === 'adoracion' ? 'Ador.' : 'Alab.'}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderSlSelected() {
+  const group = $('slSelectedGroup');
+  const container = $('slSelectedSongs');
+  if (!group || !container) return;
+  if (!slSelectedIds.length) { group.style.display = 'none'; $('slCount').textContent = ''; return; }
+  group.style.display = 'block';
+  container.innerHTML = slSelectedIds.map((id, i) => {
+    const s = songs.find(x => x.id === id);
+    if (!s) return '';
+    return `<div style="display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 12px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:var(--text-dim)">${i+1}</span>
+      <span style="flex:1;font-size:0.88rem">${s.title}</span>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:0.78rem;color:var(--gold)">${s.tone || ''}</span>
+    </div>`;
+  }).join('');
+  $('slCount').textContent = `(${slSelectedIds.length} canciones)`;
+}
+
+window.slToggleSong = (id) => {
+  if (slSelectedIds.includes(id)) {
+    slSelectedIds = slSelectedIds.filter(x => x !== id);
+  } else {
+    slSelectedIds.push(id);
+  }
+  renderSlCatalog();
+  renderSlSelected();
+};
+
+$('slSearch').addEventListener('input', renderSlCatalog);
 
 $('btnNuevoSetlist').addEventListener('click', () => {
   currentSlId = null;
@@ -1414,9 +1465,10 @@ $('btnNuevoSetlist').addEventListener('click', () => {
   $('slFecha').value = todayISO();
   $('slNotas').value = '';
   $('slSearch').value = '';
-  $('slSearchResults').style.display = 'none';
-  $('slSelectedSongs').innerHTML = '';
   $('slCount').textContent = '';
+  $('slSelectedGroup').style.display = 'none';
+  $('shareSetlistModalBtn').style.display = 'none';
+  renderSlCatalog();
   openModal('modalSetlist');
 });
 
@@ -1441,61 +1493,21 @@ $('saveSetlistBtn').addEventListener('click', () => {
     const newSl = { id: Date.now().toString(), fecha, tipo: $('slTipo').value,
       songs: [...slSelectedIds], notas: $('slNotas').value.trim() };
     setlists.unshift(newSl);
+    currentSlId = newSl.id;
   }
   save();
   renderSetlists();
-  currentSlId = null;
-  closeModal('modalSetlist');
-  // Switch to setlists tab
-  document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
-  document.querySelectorAll('.view').forEach(x => x.classList.remove('active'));
-  document.querySelector('[data-tab="setlists"]').classList.add('active');
-  $('view-setlists').classList.add('active');
+  $('shareSetlistModalBtn').style.display = '';
+  const btn = $('saveSetlistBtn');
+  const orig = btn.textContent;
+  btn.textContent = '✓ Guardado!';
+  btn.style.background = '#4CAF8A';
+  setTimeout(() => { btn.textContent = orig; btn.style.background = ''; }, 2000);
 });
 
-$('slSearch').addEventListener('input', () => {
-  const q = $('slSearch').value.toLowerCase();
-  const results = $('slSearchResults');
-  if (!q) { results.style.display = 'none'; return; }
-  const matches = songs.filter(s => s.title.toLowerCase().includes(q) && !slSelectedIds.includes(s.id));
-  if (!matches.length) { results.style.display = 'none'; return; }
-  results.style.display = 'block';
-  results.innerHTML = matches.map(s =>
-    `<div style="padding:12px 14px;cursor:pointer;font-size:0.88rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center" data-id="${s.id}">
-      <span>${s.title}</span><span class="tone-display">${s.tone || ''}</span>
-    </div>`).join('');
-  results.querySelectorAll('[data-id]').forEach(row => {
-    row.addEventListener('click', () => {
-      slSelectedIds.push(row.dataset.id);
-      $('slSearch').value = '';
-      results.style.display = 'none';
-      renderSlSelected();
-      slAutoSave();
-    });
-  });
+$('shareSetlistModalBtn').addEventListener('click', () => {
+  if (currentSlId) shareSetlist(currentSlId);
 });
-
-function renderSlSelected() {
-  $('slSelectedSongs').innerHTML = slSelectedIds.length === 0
-    ? `<div style="font-size:0.8rem;color:var(--text-dim);padding:8px 0">Buscá canciones arriba para agregarlas.</div>`
-    : slSelectedIds.map((id, i) => {
-        const s = songs.find(x => x.id === id);
-        if (!s) return '';
-        return `<div style="display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 12px">
-          <span style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:var(--text-dim)">${i+1}</span>
-          <span style="flex:1;font-size:0.88rem">${s.title}</span>
-          <span class="tone-display" style="font-size:0.78rem">${s.tone || ''}</span>
-          <button style="background:none;border:none;color:var(--red);cursor:pointer;font-size:1.1rem;padding:0 4px" onclick="slRemove('${id}')">✕</button>
-        </div>`;
-      }).join('');
-  $('slCount').textContent = slSelectedIds.length ? `(${slSelectedIds.length} canciones)` : '';
-}
-
-window.slRemove = id => {
-  slSelectedIds = slSelectedIds.filter(x => x !== id);
-  renderSlSelected();
-  slAutoSave();
-};
 
 function renderSetlists() {
   const grid = $('setlistGrid');
