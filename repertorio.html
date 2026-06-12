@@ -875,10 +875,30 @@ function renderThemeFilters() {
   if (!container) return;
   const themes = [...new Set(songs.map(s => s.theme).filter(Boolean))].sort();
   if (!themes.length) { container.innerHTML = ''; return; }
-  container.innerHTML = themes.map(t => `
-    <button onclick="filterByTheme('${t}')" style="background:${currentTheme === t ? 'rgba(76,175,138,0.25)' : 'rgba(76,175,138,0.1)'};color:var(--green);border:${currentTheme === t ? '1px solid var(--green)' : '1px solid transparent'};border-radius:20px;padding:3px 10px;font-size:0.72rem;font-weight:${currentTheme === t ? '600' : '400'};cursor:pointer">
-      ${t}${currentTheme === t ? ' ✕' : ''}
-    </button>`).join('');
+  container.innerHTML = themes.map(t => {
+    const color = getThemeColor(t);
+    const active = currentTheme === t;
+    return `<button onclick="filterByTheme('${t}')" style="background:${active ? color.bg2 : color.bg1};color:${color.text};border:${active ? '1px solid ' + color.text : '1px solid transparent'};border-radius:20px;padding:3px 10px;font-size:0.72rem;font-weight:${active ? '600' : '400'};cursor:pointer">
+      ${t}${active ? ' ✕' : ''}
+    </button>`;
+  }).join('');
+}
+
+const THEME_COLORS = [
+  { bg1: 'rgba(76,175,138,0.12)',  bg2: 'rgba(76,175,138,0.28)',  text: '#4CAF8A' },
+  { bg1: 'rgba(123,104,238,0.12)', bg2: 'rgba(123,104,238,0.28)', text: '#7B68EE' },
+  { bg1: 'rgba(201,168,76,0.12)',  bg2: 'rgba(201,168,76,0.28)',  text: '#C9A84C' },
+  { bg1: 'rgba(224,123,74,0.12)',  bg2: 'rgba(224,123,74,0.28)',  text: '#E07B4A' },
+  { bg1: 'rgba(85,170,220,0.12)',  bg2: 'rgba(85,170,220,0.28)',  text: '#55AADC' },
+  { bg1: 'rgba(220,85,150,0.12)',  bg2: 'rgba(220,85,150,0.28)',  text: '#DC5596' },
+  { bg1: 'rgba(150,200,80,0.12)',  bg2: 'rgba(150,200,80,0.28)',  text: '#96C850' },
+  { bg1: 'rgba(220,160,80,0.12)',  bg2: 'rgba(220,160,80,0.28)',  text: '#DCA050' },
+];
+
+function getThemeColor(theme) {
+  const themes = [...new Set(songs.map(s => s.theme).filter(Boolean))].sort();
+  const idx = themes.indexOf(theme) % THEME_COLORS.length;
+  return THEME_COLORS[idx];
 }
 
 window.filterByTheme = (theme) => {
@@ -922,7 +942,7 @@ function renderSongs() {
           <div class="song-meta">
             <span class="badge badge-${s.category}">${s.category === 'adoracion' ? 'Adoración' : 'Alabanza'}</span>
             <span class="tone-display">${s.tone || '—'}</span>
-            ${s.theme ? `<span style="font-size:0.7rem;background:rgba(76,175,138,0.15);color:var(--green);padding:2px 8px;border-radius:10px;cursor:pointer" onclick="event.stopPropagation();filterByTheme('${s.theme}')">${s.theme}</span>` : ''}
+            ${s.theme ? (() => { const c = getThemeColor(s.theme); return `<span style="font-size:0.7rem;background:${c.bg1};color:${c.text};padding:2px 8px;border-radius:10px;cursor:pointer" onclick="event.stopPropagation();filterByTheme('${s.theme}')">${s.theme}</span>`; })() : ''}
           </div>
           ${s.chords ? `<div class="song-notes-preview">${s.chords.split('\n')[0]}</div>` : ''}
           ${lastUse ? `<div class="song-last-used">Último uso: ${dateStr(lastUse.fecha)} — ${lastUse.tipo}</div>` : ''}
