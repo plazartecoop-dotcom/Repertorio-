@@ -1368,7 +1368,7 @@ $('btnShareSetlist').addEventListener('click', () => {
   const sl = setlists[0];
   const slSongs = sl.songs.map(id => songs.find(s => s.id === id)).filter(Boolean);
   const fecha = new Date(sl.fecha+'T12:00:00').toLocaleDateString('es-AR', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
-  const publicLink = `https://plazartecoop-dotcom.github.io/Repertorio-/lista%20de%20canciones-p%C3%BAblico.html?sl=${sl.id}`;
+  const publicLink = `https://plazartecoop-dotcom.github.io/Repertorio-/lista%20de%20canciones.html?sl=${sl.id}`;
 
   let texto = `🎵 *SETLIST — ${fecha.toUpperCase()}*\n`;
   texto += `📋 ${sl.tipo.charAt(0).toUpperCase()+sl.tipo.slice(1)}`;
