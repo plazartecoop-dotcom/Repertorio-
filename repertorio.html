@@ -631,6 +631,7 @@
       <button class="filter-btn" data-filter="adoracion">Adoración</button>
       <button class="filter-btn" data-filter="alabanza">Alabanza</button>
     </div>
+    <div id="themeFilters" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px"></div>
   </div>
   <div class="song-list" id="songList"></div>
 </div>
@@ -822,6 +823,7 @@ function loadFromFirebase() {
     songs = Object.values(data.songs || {});
     setlists = Object.values(data.setlists || {});
     renderSongs();
+    renderThemeFilters();
     renderSetlists();
     if (document.querySelector('[data-tab="historial"].active')) renderHistorial();
     showLoading(false);
@@ -866,6 +868,24 @@ document.querySelectorAll('.tab').forEach(t => {
 // ══ RENDER SONGS ══════════════════════════════════════════
 let currentFilter = 'todas';
 let currentSearch = '';
+let currentTheme = '';
+
+function renderThemeFilters() {
+  const container = $('themeFilters');
+  if (!container) return;
+  const themes = [...new Set(songs.map(s => s.theme).filter(Boolean))].sort();
+  if (!themes.length) { container.innerHTML = ''; return; }
+  container.innerHTML = themes.map(t => `
+    <button onclick="filterByTheme('${t}')" style="background:${currentTheme === t ? 'rgba(76,175,138,0.25)' : 'rgba(76,175,138,0.1)'};color:var(--green);border:${currentTheme === t ? '1px solid var(--green)' : '1px solid transparent'};border-radius:20px;padding:3px 10px;font-size:0.72rem;font-weight:${currentTheme === t ? '600' : '400'};cursor:pointer">
+      ${t}${currentTheme === t ? ' ✕' : ''}
+    </button>`).join('');
+}
+
+window.filterByTheme = (theme) => {
+  currentTheme = currentTheme === theme ? '' : theme;
+  renderThemeFilters();
+  renderSongs();
+};
 
 function renderSongs() {
   const list = $('songList');
@@ -874,7 +894,8 @@ function renderSongs() {
     const matchSearch = !currentSearch ||
       s.title.toLowerCase().includes(currentSearch) ||
       (s.theme || '').toLowerCase().includes(currentSearch);
-    return matchCat && matchSearch;
+    const matchTheme = !currentTheme || (s.theme || '') === currentTheme;
+    return matchCat && matchSearch && matchTheme;
   });
 
   if (filtered.length === 0) {
@@ -901,7 +922,7 @@ function renderSongs() {
           <div class="song-meta">
             <span class="badge badge-${s.category}">${s.category === 'adoracion' ? 'Adoración' : 'Alabanza'}</span>
             <span class="tone-display">${s.tone || '—'}</span>
-            ${s.theme ? `<span style="font-size:0.72rem;color:var(--text-dim)">${s.theme}</span>` : ''}
+            ${s.theme ? `<span style="font-size:0.7rem;background:rgba(76,175,138,0.15);color:var(--green);padding:2px 8px;border-radius:10px;cursor:pointer" onclick="event.stopPropagation();filterByTheme('${s.theme}')">${s.theme}</span>` : ''}
           </div>
           ${s.chords ? `<div class="song-notes-preview">${s.chords.split('\n')[0]}</div>` : ''}
           ${lastUse ? `<div class="song-last-used">Último uso: ${dateStr(lastUse.fecha)} — ${lastUse.tipo}</div>` : ''}
@@ -1024,7 +1045,7 @@ $('saveSongForm').addEventListener('click', () => {
       nickname: $('fNickname').value.trim(), link: $('fLink').value.trim(),
       history: [], notes: [] });
   }
-  save(); renderSongs(); closeModal('modalSongForm');
+  save(); renderSongs(); renderThemeFilters(); closeModal('modalSongForm');
 });
 
 // ══ TRANSPOSER ════════════════════════════════════════════
