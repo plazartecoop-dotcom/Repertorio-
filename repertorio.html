@@ -634,7 +634,6 @@
 <!-- ══ SETLISTS ══ -->
 <div class="view" id="view-setlists">
   <div class="toolbar">
-    <button class="btn-secondary admin-only" id="btnShareSetlist" style="margin-left:0">📤 Compartir por WhatsApp</button>
     <button class="btn-primary admin-only" id="btnNuevoSetlist" style="margin-left:auto">+ Nuevo Setlist</button>
   </div>
   <div class="setlist-grid" id="setlistGrid"></div>
@@ -1363,9 +1362,9 @@ $('detailPrintBtn').addEventListener('click', () => {
   win.document.close();
 });
 
-$('btnShareSetlist').addEventListener('click', () => {
-  if (!setlists.length) return;
-  const sl = setlists[0];
+window.shareSetlist = (slId) => {
+  const sl = setlists.find(x => x.id === slId);
+  if (!sl) return;
   const slSongs = sl.songs.map(id => songs.find(s => s.id === id)).filter(Boolean);
   const fecha = new Date(sl.fecha+'T12:00:00').toLocaleDateString('es-AR', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
   const publicLink = `https://plazartecoop-dotcom.github.io/Repertorio-/setlist.html?sl=${sl.id}`;
@@ -1381,7 +1380,7 @@ $('btnShareSetlist').addEventListener('click', () => {
   });
   texto += `Ver letra y acordes 👇\n${publicLink}`;
   window.open('https://wa.me/?text=' + encodeURIComponent(texto), '_blank');
-});
+};
 
 // ══ REGISTRAR USO ══════════════════════════════════════════
 $('closeUso').addEventListener('click', () => closeModal('modalUso'));
@@ -1512,6 +1511,7 @@ function renderSetlists() {
         </div>
         <div style="display:flex;align-items:center;gap:8px">
           <span class="count-badge">${slSongs.length} canciones</span>
+          <button onclick="shareSetlist('${sl.id}')" class="admin-only" style="background:none;border:none;color:var(--gold);cursor:pointer;font-size:1.2rem;padding:4px" title="Compartir por WhatsApp">📤</button>
           <button onclick="deleteSetlist('${sl.id}')" class="admin-only" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:1.1rem;padding:4px" title="Eliminar setlist">🗑</button>
         </div>
       </div>
