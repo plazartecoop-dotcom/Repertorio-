@@ -1384,7 +1384,10 @@ window.shareSetlist = (slId) => {
   slSongs.forEach((s, i) => {
     texto += `${i+1}. *${s.title}*`;
     if (s.nickname) texto += ` _(${s.nickname})_`;
-    texto += `\n   🎼 ${s.tone || '—'} · ${s.category === 'adoracion' ? '🙏 Adoración' : '🎉 Alabanza'}\n\n`;
+    texto += `\n   🎼 ${s.tone || '—'} · ${s.category === 'adoracion' ? '🙏 Adoración' : '🎉 Alabanza'}`;
+    const nota = (sl.songNotes || {})[s.id];
+    if (nota) texto += `\n   📝 ${nota}`;
+    texto += '\n\n';
   });
   texto += `Ver letra y acordes 👇\n${publicLink}`;
   window.open('https://wa.me/?text=' + encodeURIComponent(texto), '_blank');
@@ -1408,6 +1411,7 @@ $('saveUso').addEventListener('click', () => {
 // ══ SETLIST ════════════════════════════════════════════
 let currentSlId = null;
 let slSelectedIds = [];
+let slSongNotes = {}; // id -> nota
 
 function renderSlCatalog() {
   const q = ($('slSearch').value || '').toLowerCase();
@@ -1438,10 +1442,22 @@ function renderSlSelected() {
   container.innerHTML = slSelectedIds.map((id, i) => {
     const s = songs.find(x => x.id === id);
     if (!s) return '';
-    return `<div style="display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 12px">
-      <span style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:var(--text-dim)">${i+1}</span>
-      <span style="flex:1;font-size:0.88rem">${s.title}</span>
-      <span style="font-family:'JetBrains Mono',monospace;font-size:0.78rem;color:var(--gold)">${s.tone || ''}</span>
+    const nota = slSongNotes[id] || '';
+    return `<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:4px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:var(--text-dim)">${i+1}</span>
+        <span style="flex:1;font-size:0.88rem">${s.title}</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:0.78rem;color:var(--gold)">${s.tone || ''}</span>
+      </div>
+      ${nota
+        ? `<div style="margin-top:6px;display:flex;align-items:center;gap:6px;background:rgba(201,168,76,0.08);border-radius:6px;padding:5px 8px">
+            <span style="font-size:0.78rem;color:var(--text-dim);font-style:italic;flex:1">${nota}</span>
+            <button onclick="slEditNote('${id}')" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:0.7rem;padding:0">✏</button>
+          </div>`
+        : `<div onclick="slEditNote('${id}')" style="margin-top:6px;display:flex;align-items:center;gap:6px;border:1px dashed var(--border);border-radius:6px;padding:5px 8px;cursor:pointer">
+            <span style="font-size:0.78rem;color:var(--text-dim)">+ Agregar nota...</span>
+          </div>`
+      }
     </div>`;
   }).join('');
   $('slCount').textContent = `(${slSelectedIds.length} canciones)`;
@@ -1450,10 +1466,21 @@ function renderSlSelected() {
 window.slToggleSong = (id) => {
   if (slSelectedIds.includes(id)) {
     slSelectedIds = slSelectedIds.filter(x => x !== id);
+    delete slSongNotes[id];
   } else {
     slSelectedIds.push(id);
   }
   renderSlCatalog();
+  renderSlSelected();
+};
+
+window.slEditNote = (id) => {
+  const s = songs.find(x => x.id === id);
+  const current = slSongNotes[id] || '';
+  const nota = prompt(`Nota para "${s.title}":`, current);
+  if (nota === null) return;
+  if (nota.trim()) slSongNotes[id] = nota.trim();
+  else delete slSongNotes[id];
   renderSlSelected();
 };
 
@@ -1462,6 +1489,7 @@ $('slSearch').addEventListener('input', renderSlCatalog);
 $('btnNuevoSetlist').addEventListener('click', () => {
   currentSlId = null;
   slSelectedIds = [];
+  slSongNotes = {};
   $('slFecha').value = todayISO();
   $('slNotas').value = '';
   $('slSearch').value = '';
@@ -1481,17 +1509,19 @@ $('saveSetlistBtn').addEventListener('click', () => {
   const fecha = $('slFecha').value;
   if (!fecha) { alert('Elegí una fecha'); return; }
   if (slSelectedIds.length === 0) { alert('Agregá al menos una canción'); return; }
+  const songsWithNotes = slSelectedIds.map(id => ({ id, nota: slSongNotes[id] || '' }));
   if (currentSlId) {
     const sl = setlists.find(x => x.id === currentSlId);
     if (sl) {
       sl.songs = [...slSelectedIds];
+      sl.songNotes = {...slSongNotes};
       sl.notas = $('slNotas').value.trim();
       sl.fecha = fecha;
       sl.tipo = $('slTipo').value;
     }
   } else {
     const newSl = { id: Date.now().toString(), fecha, tipo: $('slTipo').value,
-      songs: [...slSelectedIds], notas: $('slNotas').value.trim() };
+      songs: [...slSelectedIds], songNotes: {...slSongNotes}, notas: $('slNotas').value.trim() };
     setlists.unshift(newSl);
     currentSlId = newSl.id;
   }
@@ -1540,13 +1570,18 @@ function renderSetlists() {
       </div>
       <div class="setlist-body">
         <ul class="setlist-songs">
-          ${slSongs.map((s, i) => `<li class="setlist-song-item">
-            <span class="setlist-num">${i+1}</span>
-            <span class="sl-song-name">${s.title}${s.nickname ? `<span style="font-size:0.72rem;color:var(--text-dim);font-style:italic;margin-left:6px">"${s.nickname}"</span>` : ''}</span>
-            <span class="badge badge-${s.category}" style="font-size:0.65rem">${s.category === 'adoracion' ? 'Ador.' : 'Alab.'}</span>
-            <span class="sl-tone">${s.tone || ''}</span>
-            ${s.link ? `<a href="${s.link}" target="_blank" style="color:var(--gold);display:flex;align-items:center" title="Ver referencia"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>` : ''}
-          </li>`).join('')}
+          ${slSongs.map((s, i) => {
+            const nota = (sl.songNotes || {})[s.id];
+            return `<li class="setlist-song-item" style="flex-direction:column;align-items:flex-start">
+            <div style="display:flex;align-items:center;gap:6px;width:100%">
+              <span class="setlist-num">${i+1}</span>
+              <span class="sl-song-name">${s.title}${s.nickname ? `<span style="font-size:0.72rem;color:var(--text-dim);font-style:italic;margin-left:6px">"${s.nickname}"</span>` : ''}</span>
+              <span class="badge badge-${s.category}" style="font-size:0.65rem">${s.category === 'adoracion' ? 'Ador.' : 'Alab.'}</span>
+              <span class="sl-tone">${s.tone || ''}</span>
+              ${s.link ? `<a href="${s.link}" target="_blank" style="color:var(--gold);display:flex;align-items:center" title="Ver referencia"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>` : ''}
+            </div>
+            ${nota ? `<div style="margin-top:4px;margin-left:20px;font-size:0.75rem;color:var(--text-dim);font-style:italic;background:rgba(201,168,76,0.08);padding:3px 8px;border-radius:5px">📝 ${nota}</div>` : ''}
+          </li>`;}).join('')}
         </ul>
       </div>
     </div>
@@ -1564,6 +1599,7 @@ window.editSetlist = (id) => {
   if (!sl) return;
   currentSlId = id;
   slSelectedIds = [...sl.songs];
+  slSongNotes = {...(sl.songNotes || {})};
   $('slFecha').value = sl.fecha;
   $('slTipo').value = sl.tipo;
   $('slNotas').value = sl.notas || '';
