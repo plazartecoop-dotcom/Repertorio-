@@ -32,7 +32,6 @@
     font-size: 15px;
   }
 
-  /* ── HEADER ── */
   header {
     background: var(--surface);
     border-bottom: 1px solid var(--border);
@@ -58,7 +57,6 @@
     letter-spacing: 0.05em;
   }
 
-  /* ── TABS ── */
   .tabs {
     display: flex;
     background: var(--surface);
@@ -85,11 +83,9 @@
     border-bottom-color: var(--gold);
   }
 
-  /* ── VIEWS ── */
   .view { display: none; padding: 16px; max-width: 800px; margin: 0 auto; }
   .view.active { display: block; }
 
-  /* ── SEARCH & FILTER BAR ── */
   .toolbar {
     display: flex;
     gap: 8px;
@@ -145,7 +141,6 @@
   }
   .btn-primary:hover { opacity: 0.88; }
 
-  /* ── SONG CARDS ── */
   .song-list { display: flex; flex-direction: column; gap: 10px; }
   .song-card {
     background: var(--surface);
@@ -220,7 +215,6 @@
   .wave-adoracion { background: rgba(123,104,238,0.15); }
   .wave-alabanza  { background: rgba(224,123,74,0.15); }
 
-  /* ── MODAL ── */
   .modal-overlay {
     display: none;
     position: fixed;
@@ -308,7 +302,6 @@
     cursor: pointer;
   }
 
-  /* ── SONG DETAIL ── */
   .detail-section {
     background: var(--bg);
     border: 1px solid var(--border);
@@ -332,7 +325,6 @@
     white-space: pre-wrap;
   }
 
-  /* ── CHORD SHEET FORMAT ── */
   .chord-sheet { font-family: 'JetBrains Mono', monospace; font-size: 0.88rem; line-height: 1; }
   .cs-section-label {
     font-size: 0.7rem;
@@ -367,7 +359,6 @@
     font-family: 'Inter', sans-serif;
   }
 
-  /* ── INLINE CHORD EDIT ── */
   .chord-edit-area {
     width: 100%;
     background: var(--bg);
@@ -383,7 +374,6 @@
     outline: none;
   }
 
-  /* ── PRINT ── */
   @media print {
     header, .tabs, .toolbar, .modal-overlay:not(.printing),
     .modal-actions, .add-note-area, #notesList,
@@ -461,7 +451,6 @@
     flex-shrink: 0;
   }
 
-  /* ── SETLISTS ── */
   .setlist-grid { display: flex; flex-direction: column; gap: 12px; }
   .setlist-card {
     background: var(--surface);
@@ -507,7 +496,6 @@
     color: var(--gold);
   }
 
-  /* ── HISTORIAL ── */
   .history-timeline { display: flex; flex-direction: column; gap: 10px; }
   .history-block {
     background: var(--surface);
@@ -521,7 +509,6 @@
     margin-bottom: 8px;
   }
 
-  /* ── EMPTY STATE ── */
   .empty-state {
     text-align: center;
     padding: 48px 20px;
@@ -536,7 +523,6 @@
   }
   .empty-state p { font-size: 0.82rem; line-height: 1.5; }
 
-  /* ── TONE VARIANTS ── */
   .tone-variant-row {
     display: flex;
     gap: 8px;
@@ -802,7 +788,6 @@ const firebaseConfig = {
   appId: "1:943742793691:web:f2c863b10deae4e20919fe"
 };
 
-// Load Firebase
 const fbScript = document.createElement('script');
 fbScript.src = 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js';
 fbScript.onload = () => {
@@ -992,7 +977,6 @@ function updateAdminUI() {
 
 function promptAdmin() {
   if (isAdmin) {
-    // Logout
     sessionStorage.removeItem('rep_admin');
     isAdmin = false;
     updateAdminUI();
@@ -1084,24 +1068,20 @@ function transposeNote(note, steps) {
 }
 
 function transposeChordToken(token, steps) {
-  // Match chord root like C, C#, Db, followed by optional quality (m, maj7, sus4, etc.)
   const match = token.match(/^([A-G][b#]?)(.*)$/);
   if (!match) return token;
   const root = transposeNote(match[1], steps);
-  // Handle slash chords bass note e.g. G/B
   const quality = match[2].replace(/\/([A-G][b#]?)/, (_, bass) => '/' + transposeNote(bass, steps));
   return root + quality;
 }
 
 function transposeText(text, steps) {
   if (!text || steps === 0) return text;
-  // Replace chord tokens — words starting with A-G
   return text.replace(/\b([A-G][b#]?(?:maj|min|m|M|sus|aug|dim|add|[0-9]|\/[A-G][b#]?)*)/g, token => {
     return transposeChordToken(token, steps);
   });
 }
 
-// Per-song transposition offset (session only, not saved)
 const transposeOffsets = {};
 
 // ══ SONG DETAIL ══════════════════════════════════════════
@@ -1164,7 +1144,7 @@ function renderDetailBody(s) {
           <button onclick="saveChordEdit('${s.id}')" style="background:var(--gold);color:#0F0F1A;border:none;padding:7px 16px;border-radius:7px;font-size:0.82rem;font-weight:600;cursor:pointer">Guardar</button>
         </div>
       </div>
-    </div>`; 
+    </div>`;
   } else {
     html += `<div class="detail-section">
       <div class="detail-section-title" style="display:flex;justify-content:space-between;align-items:center">
@@ -1183,7 +1163,6 @@ function renderDetailBody(s) {
     </div>`;
   }
 
-  // Notes / bitácora
   html += `<div class="detail-section">
     <div class="detail-section-title">Bitácora de arreglos y notas</div>
     <ul class="notes-list" id="notesList">
@@ -1196,7 +1175,6 @@ function renderDetailBody(s) {
     </div>
   </div>`;
 
-  // History
   if (s.history && s.history.length) {
     html += `<div class="detail-section">
       <div class="detail-section-title">Historial de uso <span class="count-badge">${s.history.length}</span></div>
@@ -1212,7 +1190,6 @@ function renderDetailBody(s) {
 
   $('detailBody').innerHTML = html;
 
-  // Render chord sheet with canvas-based pixel positioning after font loads
   const csContainer = document.getElementById('chordSheetView-' + s.id);
   if (csContainer && s.chords) {
     const offset = transposeOffsets[s.id] || 0;
@@ -1243,9 +1220,6 @@ window.doTranspose = (id, steps) => {
 };
 
 // ══ CHORD SHEET RENDERER ══════════════════════════════════
-// Format: lines starting with chord tokens (A-G) are chord lines,
-// section headers are ALL CAPS words alone (CORO, PUENTE, ESTROFA, INTRO...)
-// Everything else is lyric lines.
 function isChordLine(line) {
   const trimmed = line.trim();
   if (!trimmed) return false;
@@ -1258,7 +1232,6 @@ function isSectionLabel(line) {
   return /^(INTRO|CORO|ESTROFA|PUENTE|VERSO|BRIDGE|PRE-CORO|FINAL|OUTRO|INTERLUDIO|Introducción)/i.test(line.trim()) && line.trim().length < 40;
 }
 
-// Canvas-based text measurer — waits for font to load
 let _canvas, _ctx;
 function measurePx(str, fontSize) {
   if (!_canvas) { _canvas = document.createElement('canvas'); _ctx = _canvas.getContext('2d'); }
@@ -1335,9 +1308,7 @@ function renderChordSheetDOM(text, container) {
   container.appendChild(wrapper);
 }
 
-// Wrapper that waits for font then renders into DOM directly
 function renderChordSheet(text) {
-  // Return placeholder; actual render happens via renderChordSheetInto
   return `<div id="csPlaceholder" style="color:var(--text-dim);font-size:0.8rem">Cargando…</div>`;
 }
 
@@ -1452,7 +1423,7 @@ $('saveUso').addEventListener('click', () => {
 // ══ SETLIST ════════════════════════════════════════════
 let currentSlId = null;
 let slSelectedIds = [];
-let slSongNotes = {}; // id -> nota
+let slSongNotes = {};
 
 function renderSlCatalog() {
   const q = ($('slSearch').value || '').toLowerCase();
@@ -1550,7 +1521,6 @@ $('saveSetlistBtn').addEventListener('click', () => {
   const fecha = $('slFecha').value;
   if (!fecha) { alert('Elegí una fecha'); return; }
   if (slSelectedIds.length === 0) { alert('Agregá al menos una canción'); return; }
-  const songsWithNotes = slSelectedIds.map(id => ({ id, nota: slSongNotes[id] || '' }));
   if (currentSlId) {
     const sl = setlists.find(x => x.id === currentSlId);
     if (sl) {
@@ -1590,7 +1560,6 @@ function renderSetlists() {
     </div>`;
     return;
   }
-  // Show only the most recent setlist
   const sl = setlists[0];
   const slSongs = sl.songs.map(id => songs.find(s => s.id === id)).filter(Boolean);
   grid.innerHTML = `
@@ -1630,6 +1599,7 @@ function renderSetlists() {
 }
 
 window.deleteSetlist = (id) => {
+  if (!confirm('¿Eliminar este setlist?')) return;
   setlists = setlists.filter(sl => sl.id !== id);
   save();
   renderSetlists();
@@ -1656,10 +1626,8 @@ window.editSetlist = (id) => {
 function renderHistorial() {
   const list = $('historialList');
 
-  // Past setlists (all except the most recent)
   const pastSetlists = setlists.slice(1).sort((a, b) => b.fecha.localeCompare(a.fecha));
 
-  // Song usage history
   const allUsage = [];
   songs.forEach(s => {
     (s.history || []).forEach(h => allUsage.push({ ...h, songTitle: s.title, songId: s.id, category: s.category }));
@@ -1677,7 +1645,6 @@ function renderHistorial() {
 
   let html = '';
 
-  // Past setlists section
   if (pastSetlists.length) {
     html += `<div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);font-weight:700;margin-bottom:10px">Setlists anteriores</div>`;
     html += pastSetlists.map(sl => {
@@ -1689,6 +1656,7 @@ function renderHistorial() {
             <span class="history-type type-${sl.tipo}">${sl.tipo}</span>
             <button onclick="editSetlist('${sl.id}')" class="admin-only" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:0.9rem;padding:2px" title="Editar">✏️</button>
             <button onclick="shareSetlist('${sl.id}')" style="background:none;border:none;color:var(--gold);cursor:pointer;font-size:1rem;padding:2px" title="Compartir">📤</button>
+            <button onclick="deleteSetlistHistorial('${sl.id}')" class="admin-only" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:1rem;padding:2px" title="Eliminar">🗑</button>
           </div>
         </div>
         ${slSongs.map(s => `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:0.83rem;border-bottom:1px solid var(--border)">
@@ -1699,7 +1667,6 @@ function renderHistorial() {
     }).join('');
   }
 
-  // Song usage history
   if (allUsage.length) {
     html += `<div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);font-weight:700;margin:16px 0 10px">Uso de canciones</div>`;
     const grouped = {};
@@ -1720,6 +1687,15 @@ function renderHistorial() {
   list.innerHTML = html;
 }
 
+// ══ ELIMINAR SETLIST DESDE HISTORIAL ══════════════════════
+window.deleteSetlistHistorial = (id) => {
+  if (!confirm('¿Eliminar este setlist del historial?')) return;
+  setlists = setlists.filter(sl => sl.id !== id);
+  save();
+  renderHistorial();
+  renderSetlists();
+};
+
 // ══ MODAL HELPERS ══════════════════════════════════════════
 function openModal(id) { $(id).classList.add('open'); }
 function closeModal(id) { $(id).classList.remove('open'); }
@@ -1728,7 +1704,7 @@ document.querySelectorAll('.modal-overlay').forEach(m => {
   m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
 });
 
-// ══ INIT — Firebase carga los datos y llama renderSongs/renderSetlists
+// ══ INIT
 showLoading(true);
 checkAdmin();
 </script>
